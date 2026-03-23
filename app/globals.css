@@ -3,45 +3,51 @@
 @tailwind utilities;
 
 :root {
-  --nexyra-purple: #8b5cf6;
-  --bg-dark: #050506;
+  --bg-black: #000000;
+  --accent-orange: #ea580c;
+  --card-bg: #0a0a0a;
 }
 
 body {
-  background-color: #050506;
-  color: white;
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  overflow-x: hidden;
+  background-color: var(--bg-black);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Die Nexyra Glass Card - Ohne @apply Fehler */
-.nexyra-glass {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  border-radius: 32px;
+/* Rebirth Card Style */
+.rebirth-card {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
   transition: all 0.3s ease;
 }
 
-/* Der Gradient Text */
-.nexyra-gradient-text {
-  background: linear-gradient(to right, #a78bfa, #6366f1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.rebirth-card:hover {
+  border-color: rgba(234, 88, 12, 0.3);
 }
 
-/* Scrollbar Styling für den Cyber-Look */
+/* High-End Orange Buttons */
+.orange-btn {
+  background: linear-gradient(to right, #ea580c, #dc2626);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 10px 30px -10px rgba(234, 88, 12, 0.5);
+}
+
+.orange-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #050506;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f1f23;
+  background: #1a1a1a;
   border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #8b5cf6;
 }
