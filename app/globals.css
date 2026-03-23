@@ -8,18 +8,40 @@
 }
 
 body {
-  background-color: var(--bg-dark);
+  background-color: #050506;
   color: white;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   overflow-x: hidden;
-  selection-background-color: rgba(139, 92, 246, 0.3);
 }
 
-@layer components {
-  .nexyra-glass {
-    @apply bg-white/5 border border-white/10 backdrop-blur-md rounded-[32px] transition-all duration-300;
-  }
-  .nexyra-gradient-text {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500;
-  }
+/* Die Nexyra Glass Card - Ohne @apply Fehler */
+.nexyra-glass {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border-radius: 32px;
+  transition: all 0.3s ease;
+}
+
+/* Der Gradient Text */
+.nexyra-gradient-text {
+  background: linear-gradient(to right, #a78bfa, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar Styling für den Cyber-Look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #050506;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f1f23;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
 }
