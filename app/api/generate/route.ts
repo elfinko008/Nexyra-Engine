@@ -1,170 +1,121 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// ─── Types ───────────────────────────────────────────────
+// ─── 1. TYPES DEFINITION (WICHTIG GEGEN FEHLER) ────────────────
 interface GenerateRequestBody {
   prompt: string;
 }
 
-// ─── Helpers ─────────────────────────────────────────────
-function buildSystemPrompt(): string {
-  return `You are Nexyra Engine, an elite AI code generation system built by Nexyra Labs.
-
-Your role: Transform natural-language prompts into clean, production-ready scripts.
-
-Rules:
-- Output ONLY the code. No markdown fences, no explanations, no preamble.
-- Include inline comments for non-obvious logic.
-- Follow idiomatic patterns for the target language.
-- Optimize for readability, performance, and edge-case safety.
-- Default to TypeScript if no language is specified.
-- Never include placeholder values — make the code immediately usable.`;
+interface AnthropicResponse {
+  id: string;
+  type: string;
+  role: string;
+  content: Array<{
+    type: string;
+    text: string;
+  }>;
+  model: string;
+  stop_reason: string | null;
+  stop_sequence: string | null;
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
 }
 
-// ─── Route Handler ────────────────────────────────────────
+// ─── 2. SYSTEM PROMPT ───────────────────────────────────────────
+function buildSystemPrompt(): string {
+  return `You are Nexyra Engine, an elite AI code generation system built by Nexyra Labs.
+Your role: Transform natural-language prompts into clean, production-ready Luau scripts for Roblox.
+
+Rules:
+- Output ONLY the pure Luau code.
+- NO markdown fences, NO talking, NO explanations.
+- Include inline comments for complex logic.
+- Follow idiomatic Roblox patterns (Task library, Type checking).
+- Ensure the code is immediately usable in Roblox Studio.`;
+}
+
+// ─── 3. ROUTE HANDLER ───────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  // 1. Auth check via Supabase
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "") ?? "";
-
-  // Attempt to verify the user from the session cookie or header
-  const {
-    data: { user },
-  } = token
-    ? await supabase.auth.getUser(token)
-    : await supabase.auth.getUser();
-
-  // 2. Parse body
-  let body: GenerateRequestBody;
   try {
-    body = (await req.json()) as GenerateRequestBody;
-  } catch {
-    return NextResponse.json(
-      { message: "Invalid request body." },
-      { status: 400 }
+    console.log("[nexyra/generate] Incoming request...");
+
+    // Supabase Setup
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-  }
 
-  const { prompt } = body;
+    // Auth Check
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "") ?? "";
+    
+    const { data: { user } } = token 
+      ? await supabase.auth.getUser(token) 
+      : await supabase.auth.getUser();
 
-  if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
-    return NextResponse.json(
-      { message: "Prompt is required and must be a non-empty string." },
-      { status: 400 }
-    );
-  }
+    // Body Parsing
+    const body = (await req.json()) as GenerateRequestBody;
+    const { prompt } = body;
 
-  if (prompt.length > 4000) {
-    return NextResponse.json(
-      { message: "Prompt exceeds maximum length of 4000 characters." },
-      { status: 400 }
-    );
-  }
-
-  // 3. Credit check (if user is authenticated)
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("credits, plan")
-      .eq("id", user.id)
-      .single();
-
-    if (profile && profile.credits !== null && profile.credits <= 0) {
-      return NextResponse.json(
-        {
-          message:
-            "Insufficient credits. Please upgrade your plan or wait for your credits to reset.",
-        },
-        { status: 402 }
-      );
+    if (!prompt || prompt.trim().length === 0) {
+      return NextResponse.json({ message: "Prompt is required." }, { status: 400 });
     }
-  }
 
-  // 4. Call the AI provider
-  const openaiKey = process.env.OPENAI_API_KEY;
+    // Credit Check
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("id", user.id)
+        .single();
 
-  if (!openaiKey) {
-    return NextResponse.json(
-      { message: "AI provider is not configured. Contact support." },
-      { status: 503 }
-    );
-  }
+      if (profile && profile.credits <= 0) {
+        return NextResponse.json({ message: "Insufficient credits." }, { status: 402 });
+      }
+    }
 
-  let result: string;
+    // Anthropic API Key Check
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (!anthropicKey) {
+      return NextResponse.json({ message: "API Key missing." }, { status: 503 });
+    }
 
-  try {
-    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Claude API Call
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiKey}`,
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "claude-3-5-sonnet-20240620",
         max_tokens: 2048,
-        temperature: 0.2,
-        messages: [
-          {
-            role: "system",
-            content: buildSystemPrompt(),
-          },
-          {
-            role: "user",
-            content: prompt.trim(),
-          },
-        ],
+        temperature: 0.3,
+        system: buildSystemPrompt(),
+        messages: [{ role: "user", content: prompt.trim() }],
       }),
     });
 
     if (!aiResponse.ok) {
-      const errData = (await aiResponse.json()) as { error?: { message?: string } };
-      console.error("[nexyra/generate] OpenAI error:", errData);
-      return NextResponse.json(
-        {
-          message:
-            errData?.error?.message ?? "AI provider returned an error.",
-        },
-        { status: 502 }
-      );
+      const errData = await aiResponse.json();
+      return NextResponse.json({ message: "Claude API Error" }, { status: 502 });
     }
 
-    const aiData = (await aiResponse.json()) as {
-      choices: Array<{
-        message: { content: string | null };
-        finish_reason: string;
-      }>;
-    };
+    const aiData = (await aiResponse.json()) as AnthropicResponse;
+    const result = aiData.content[0]?.text.trim() ?? "";
 
-    result = aiData.choices?.[0]?.message?.content?.trim() ?? "";
-
-    if (!result) {
-      return NextResponse.json(
-        { message: "AI returned an empty response. Please try again." },
-        { status: 502 }
-      );
+    // Credits abziehen
+    if (user && result) {
+      await supabase.rpc("decrement_credits", { user_id: user.id });
     }
-  } catch (err) {
-    console.error("[nexyra/generate] Fetch error:", err);
-    return NextResponse.json(
-      { message: "Failed to reach AI provider. Please try again." },
-      { status: 503 }
-    );
-  }
 
-  // 5. Decrement credits (fire and forget — don't block the response)
-  if (user) {
-    supabase.rpc("decrement_credits", { user_id: user.id }).then(({ error }) => {
-      if (error) {
-        console.warn("[nexyra/generate] Failed to decrement credits:", error.message);
-      }
-    });
-  }
+    return NextResponse.json({ result }, { status: 200 });
 
-  // 6. Return result
-  return NextResponse.json({ result }, { status: 200 });
+  } catch (err: any) {
+    console.error("[nexyra/generate] Error:", err.message);
+    return NextResponse.json({ message: "Fatal Engine Error" }, { status: 500 });
+  }
 }
