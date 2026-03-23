@@ -3,26 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --bg-dark: #050506;
   --nexyra-purple: #8b5cf6;
+  --bg-dark: #050506;
 }
 
 body {
   background-color: var(--bg-dark);
   color: white;
+  font-family: 'Inter', sans-serif;
   overflow-x: hidden;
+  selection-background-color: rgba(139, 92, 246, 0.3);
 }
 
 @layer components {
-  .nexyra-card {
-    @apply bg-[#0d0d0f] border border-white/5 rounded-[24px] shadow-2xl;
+  .nexyra-glass {
+    @apply bg-white/5 border border-white/10 backdrop-blur-md rounded-[32px] transition-all duration-300;
   }
-  
-  .nexyra-button-primary {
-    @apply bg-white text-black font-black py-3 px-6 rounded-xl hover:bg-[#8b5cf6] hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(139,92,246,0.3)];
-  }
-
-  .nexyra-input {
-    @apply w-full bg-transparent border-none outline-none text-white placeholder:text-gray-700 resize-none font-medium;
+  .nexyra-gradient-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500;
   }
 }

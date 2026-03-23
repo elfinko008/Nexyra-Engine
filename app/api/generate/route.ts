@@ -3,8 +3,12 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const promptText = body.prompt;
-    
+    const { prompt } = body;
+
+    if (!prompt || typeof prompt !== 'string') {
+      return NextResponse.json({ error: "Neural Prompt Invalid" }, { status: 400 });
+    }
+
     const apiResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -14,19 +18,23 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20240620',
-        max_tokens: 1500,
-        messages: [{ role: 'user', content: `Du bist die Nexyra Engine. Erstelle ein fertiges Roblox Script für: ${promptText}. Antworte NUR mit dem Code.` }]
+        max_tokens: 2000,
+        messages: [{ 
+          role: 'user', 
+          content: `Act as Nexyra Engine v4. Create a high-quality, optimized Roblox Luau script for: ${prompt}. Output ONLY the code blocks. Add comments to explain the system.` 
+        }]
       })
     });
 
     const data = await apiResponse.json();
     
     if (!data.content || !data.content[0]) {
-       return NextResponse.json({ result: "-- Fehler in der KI-Antwort" });
+       return NextResponse.json({ result: "-- Neural Processing Failed. Engine returned empty data." });
     }
 
     return NextResponse.json({ result: data.content[0].text });
-  } catch (error: any) {
-    return NextResponse.json({ error: "Nexyra Engine Timeout" }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Protocol Error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
